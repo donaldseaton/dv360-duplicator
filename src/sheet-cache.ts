@@ -121,7 +121,8 @@ export class SheetCache {
    * Erase the cache
    */
   clear() {
-    this.cacheSheet.clear();
+    const ss = SpreadsheetApp.getActive();
+    ss.deleteSheet(this.cacheSheet);
   }
 
   /**

@@ -97,6 +97,14 @@ export const SheetUtils = {
   },
 
   /**
+   * Clears the dropdown list
+   * @param range the range to clear
+   */
+  clearRangeDropdown(range: GoogleAppsScript.Spreadsheet.Range) {
+    range.clearDataValidations();
+  },
+
+  /**
    * Put CSV values to different sheets (one sheet per csv file)
    *
    * @param csvValues Values to save to sheets

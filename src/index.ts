@@ -26,7 +26,11 @@ import { SdfDownload } from './sdf-download';
 /**
  * Global cache container
  */
-const SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);
+let SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);
+
+function updateCache() {
+  SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);
+}
 
 function loadPartners() {
   if (SHEET_CACHE.Partners.isEmpty()) {
@@ -166,6 +170,9 @@ function onOpen(e: Event) {
 
 function clearCache() {
   CacheUtils.clearCache(SHEET_CACHE);
+  updateCache();
+  const sheet = SheetUtils.getOrCreateSheet(Config.WorkingSheet.Campaigns);
+  SheetUtils.clearRangeDropdown(sheet.getRange('A2:C'));
   loadPartners();
 }
 
