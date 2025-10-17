@@ -1,16 +1,18 @@
 /**
-    Copyright 2023 Google LLC
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-        https://www.apache.org/licenses/LICENSE-2.0
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 export abstract class ApiClient {
   /**
    *
@@ -36,7 +38,7 @@ export abstract class ApiClient {
     params?: Record<string, string | number | boolean | undefined>
   ) {
     const entries = params ? Object.entries(params) : [];
-    const defined = entries.filter(([key, value]) => value !== undefined) as [
+    const defined = entries.filter(([, value]) => value !== undefined) as [
       string,
       string | number | boolean
     ][];
@@ -63,7 +65,7 @@ export abstract class ApiClient {
     payload?: Record<string, any>
   ) {
     const res = this.fetchResponse(url, options, payload);
-    if (! res) {
+    if (!res) {
       throw Error('Cannot get result');
     }
 
@@ -92,12 +94,12 @@ export abstract class ApiClient {
       method: 'get',
       headers: {
         Authorization: 'Bearer ' + this.authToken,
-        Accept: '*/*'
-      }
+        Accept: '*/*',
+      },
     };
     const requestOptions: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
       ...defaultOptions,
-      ...options
+      ...options,
     };
     if (payload) {
       requestOptions.headers!['Content-Type'] = 'application/json';
@@ -108,7 +110,7 @@ export abstract class ApiClient {
     console.log(`Before fetch payload: ${requestOptions.payload}`);
     try {
       const res = UrlFetchApp.fetch(url, requestOptions);
-      if (200 != res.getResponseCode() && 204 != res.getResponseCode()) {
+      if (200 !== res.getResponseCode() && 204 !== res.getResponseCode()) {
         console.log('HTTP code: ' + res.getResponseCode());
         console.log('API error: ' + res.getContentText());
         console.log('URL: ' + url);

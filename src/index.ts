@@ -1,15 +1,18 @@
 /**
-    Copyright 2023 Google LLC
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-        https://www.apache.org/licenses/LICENSE-2.0
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { SheetUtils } from './sheet-utils';
 import { Config } from './config';
 import { CacheUtils } from './cache-utils';
@@ -27,14 +30,15 @@ const SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);
 
 function loadPartners() {
   if (SHEET_CACHE.Partners.isEmpty()) {
-    const partners = dv360.listPartners({ limit: 100 }) // TODO: remove limit?
-      .map((partner) => [
+    const partners = dv360
+      .listPartners({ limit: 200 }) // TODO: remove limit?
+      .map(partner => [
         `${partner.displayName} (${partner.partnerId})`,
         partner.partnerId,
-        partner.displayName
+        partner.displayName,
       ]);
-    
-      SHEET_CACHE.Partners.set(partners);
+
+    SHEET_CACHE.Partners.set(partners);
   }
 
   return SHEET_CACHE.Partners;
@@ -42,18 +46,18 @@ function loadPartners() {
 
 function loadAdvertisers(partnerId: string) {
   let advertisers = SHEET_CACHE.Advertisers.lookup(partnerId, 1);
-  if (! advertisers.length) {
-    const dv360advertisers = dv360.listAdvertisers(partnerId, { limit: 100 }); // TODO: remove limit?
+  if (!advertisers.length) {
+    const dv360advertisers = dv360.listAdvertisers(partnerId, { limit: 200 }); // TODO: remove limit?
     if (dv360advertisers && dv360advertisers.length && dv360advertisers[0]) {
-      advertisers = dv360advertisers.map((advertiser) => [
+      advertisers = dv360advertisers.map(advertiser => [
         `${advertiser.displayName} (${advertiser.advertiserId})`,
         advertiser.partnerId,
         advertiser.advertiserId,
-        advertiser.displayName
+        advertiser.displayName,
       ]);
     }
-    
-    // Do not overwrite other cached advertisers, use ".append" 
+
+    // Do not overwrite other cached advertisers, use ".append"
     SHEET_CACHE.Advertisers.append(advertisers);
   }
 
@@ -63,32 +67,29 @@ function loadAdvertisers(partnerId: string) {
 function loadCampaigns(advertiserId: string) {
   let campaigns = SHEET_CACHE.Campaigns.lookup(advertiserId, 1);
   if (!campaigns.length) {
-    const dv360campaigns = dv360.listCampaigns(
-      advertiserId,
-      {
-        limit: 100, // TODO: remove limit?
-        // List all campaigns
-        filter: DV360Utils.generateFilterString(
-          'entityStatus',
-          Config.DV360DefaultFilters.CampaignStatus
-        ),
-      }
-    );
+    const dv360campaigns = dv360.listCampaigns(advertiserId, {
+      limit: 100, // TODO: remove limit?
+      // List all campaigns
+      filter: DV360Utils.generateFilterString(
+        'entityStatus',
+        Config.DV360DefaultFilters.CampaignStatus
+      ),
+    });
 
     if (dv360campaigns && dv360campaigns.length && dv360campaigns[0]) {
-      campaigns = dv360campaigns.map((campaign) => {
-        console.log('campaign', campaign); 
+      campaigns = dv360campaigns.map(campaign => {
+        console.log('campaign', campaign);
         return [
           `${campaign.displayName} (${campaign.campaignId})`,
           campaign.advertiserId,
           campaign.campaignId,
           campaign.displayName,
           campaign.entityStatus,
-        ]
+        ];
       });
     }
-    
-    // Do not overwrite other cached campaigns, use ".append" 
+
+    // Do not overwrite other cached campaigns, use ".append"
     SHEET_CACHE.Campaigns.append(campaigns);
   }
 
@@ -97,22 +98,30 @@ function loadCampaigns(advertiserId: string) {
 
 function addAllOnEditHandlers() {
   const partnerChangedHandler = TriggerUtils.generateOnEditHandler(
-    Config.WorkingSheet.Campaigns, 1, 1, SHEET_CACHE.Partners, loadAdvertisers
+    Config.WorkingSheet.Campaigns,
+    1,
+    1,
+    SHEET_CACHE.Partners,
+    loadAdvertisers
   );
-  
+
   const advertiserChangedHandler = TriggerUtils.generateOnEditHandler(
-    Config.WorkingSheet.Campaigns, 2, 2, SHEET_CACHE.Advertisers, loadCampaigns
+    Config.WorkingSheet.Campaigns,
+    2,
+    2,
+    SHEET_CACHE.Advertisers,
+    loadCampaigns
   );
-  
+
   const checkArchivedCampaignHandler = TriggerUtils.generateOnEditHandler(
-    Config.WorkingSheet.Campaigns, 
-    3, 
+    Config.WorkingSheet.Campaigns,
+    3,
     2, // Not important since we use a custom run function
-    SHEET_CACHE.Campaigns, 
+    SHEET_CACHE.Campaigns,
     undefined,
     SheetUtils.processArchivedCampaign
   );
-  
+
   onEditEvent.addHandler(partnerChangedHandler);
   onEditEvent.addHandler(advertiserChangedHandler);
   onEditEvent.addHandler(checkArchivedCampaignHandler);
@@ -122,26 +131,27 @@ addAllOnEditHandlers();
 function setup() {
   const partners = loadPartners();
   Setup.setUpCampaignsSheet(partners.getAll().map(p => p[0]));
-  
+
   addAllOnEditHandlers();
   onEditEvent.install();
 }
 
 function autoInstall() {
-  const sheet = SpreadsheetApp.getActive()
-      .getSheetByName(Config.WorkingSheet.Campaigns);
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    Config.WorkingSheet.Campaigns
+  );
   if (!sheet || !sheet.getLastRow()) {
-      const ui = SpreadsheetApp.getUi();
-      const response = ui.alert(
-          '💿 Auto Install',
-          `It looks like "${Config.Menu.Name}" is not installed.
+    const ui = SpreadsheetApp.getUi();
+    const response = ui.alert(
+      '💿 Auto Install',
+      `It looks like "${Config.Menu.Name}" is not installed.
           Do you want we install it for you now?`,
-          ui.ButtonSet.YES_NO
-      );
+      ui.ButtonSet.YES_NO
+    );
 
-      if (ui.Button.YES == response) {
-          setup();
-      }
+    if (ui.Button.YES === response) {
+      setup();
+    }
   }
 }
 
@@ -162,32 +172,39 @@ function clearCache() {
 function showHelpPage() {
   const html = `
   This solution <b>"${Config.Menu.Name}"</b> is developed with ❤️
-  by gTech Professional Services. <br /><br /><br />
-  Learn more and get help on our official page:<br />
+  by gTech Ads. <br /><br /><br />
+  Learn more and get help on our Github page:<br />
   <a target="_blank"
     href="https://github.com/google/dv360-duplicator">
     github.com/google/dv360-duplicator
   </a>`;
-  
+
   SheetUtils.showHTMLPopUp(Config.Menu.Help, html);
 }
 
 function generateSDFForActiveSheet(reloadCache?: boolean): void {
   const activeSheetName = SpreadsheetApp.getActiveSheet().getName();
+  const message = `
+    Unsupported sheet ('${activeSheetName}'),
+    cannot generate SDF. Please select different sheet.`;
   console.log(`generateSDFForActiveSheet for sheet '${activeSheetName}'`);
   switch (activeSheetName) {
     case Config.WorkingSheet.Campaigns:
       try {
-        SheetUtils.loading.show('Generating SDF. It may take several minutes...');
+        SheetUtils.loading.show(
+          'Generating SDF. It may take several minutes...'
+        );
         SdfUtils.generateNewSDFForSelectedCampaigns(SHEET_CACHE, reloadCache);
       } catch (e: any) {
         if (e instanceof NotFoundInSDF && !reloadCache) {
           const ui = SpreadsheetApp.getUi();
           const response = ui.alert(
-            'Action needed', e.message, ui.ButtonSet.YES_NO
+            'Action needed',
+            e.message,
+            ui.ButtonSet.YES_NO
           );
 
-          if (ui.Button.YES == response) {
+          if (ui.Button.YES === response) {
             return generateSDFForActiveSheet(true);
           }
         } else if (e instanceof NotFoundInSDF && reloadCache) {
@@ -206,9 +223,6 @@ function generateSDFForActiveSheet(reloadCache?: boolean): void {
       break;
 
     default:
-      const message = `
-        Unsupported sheet ('${activeSheetName}'),
-        cannot generate SDF. Please select different sheet.`;
       SpreadsheetApp.getUi().alert(message);
       throw Error(message);
   }
@@ -227,7 +241,7 @@ function downloadGeneratedSDFAsZIP(url: string) {
       throw Error(`Cannot get file's download url. File name "${fileName}".`);
     }
 
-    showDownloadLink(driveFile.getId(), driveFile.getResourceKey());    
+    showDownloadLink(driveFile.getId(), driveFile.getResourceKey());
   } catch (e: any) {
     console.log(e);
     console.log(e.stack);
@@ -235,7 +249,7 @@ function downloadGeneratedSDFAsZIP(url: string) {
   }
 }
 
-function showDownloadLink(id: string, resourceKey: string|null) {
+function showDownloadLink(id: string, resourceKey: string | null) {
   console.log('showDownloadLink id:', id, 'resourceKey:', resourceKey);
   const url = `https://drive.google.com/file/d/${id}/view?resourcekey=${resourceKey}`;
 
@@ -244,9 +258,6 @@ function showDownloadLink(id: string, resourceKey: string|null) {
   ℹ:<i>After downloading you can upload this zip file to DV360 UI.</i>
   <br /><br /><br />
   <a target="_blank" href="${url}">Download now</a>`;
-  
-  SheetUtils.showHTMLPopUp(
-    `🍾  Your SDF is now ready`,
-    html
-  );
+
+  SheetUtils.showHTMLPopUp(`🍾  Your SDF is now ready`, html);
 }

@@ -1,31 +1,26 @@
-import { nodeResolve } from '@rollup/plugin-node-resolve';
 import cleanup from 'rollup-plugin-cleanup';
-
-const extensions = ['.js'];
-
-const preventTreeShakingPlugin = () => {
-  return {
-    name: 'no-treeshaking',
-    resolveId(id, importer) {
-      if (!importer) {
-        // no treeshaking entry points, as we're not exporting anything
-        // in Apps Script files
-        return { id, moduleSideEffects: 'no-treeshake' };
-      }
-      return null;
-    },
-  };
-};
+import license from 'rollup-plugin-license';
+import prettier from 'rollup-plugin-prettier';
+import typescript from 'rollup-plugin-typescript2';
+import { fileURLToPath } from 'url';
 
 export default {
-  input: './build/index.js',
+  input: 'src/index.ts',
   output: {
     dir: 'dist',
     format: 'esm',
   },
   plugins: [
-    preventTreeShakingPlugin(),
-    nodeResolve({ extensions }),
-    cleanup({ comments: 'all' }),
+    cleanup({ comments: 'none', extensions: ['.ts'] }),
+    license({
+      banner: {
+        content: {
+          file: fileURLToPath(new URL('license-header.txt', import.meta.url)),
+        },
+      },
+    }),
+    typescript(),
+    prettier({ parser: 'typescript' }),
   ],
+  context: 'this',
 };

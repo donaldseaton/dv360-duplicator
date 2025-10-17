@@ -1,16 +1,18 @@
 /**
-    Copyright 2023 Google LLC
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-        https://www.apache.org/licenses/LICENSE-2.0
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { ApiClient } from './api-client';
 import { CsvFile } from './csv-file';
 
@@ -70,8 +72,9 @@ export interface ListCampaignOptions extends PagingOptions {
   limit?: number;
 }
 
-export type DV360CampaignStatus = 'ENTITY_STATUS_ACTIVE' 
-  | 'ENTITY_STATUS_ARCHIVED' 
+export type DV360CampaignStatus =
+  | 'ENTITY_STATUS_ACTIVE'
+  | 'ENTITY_STATUS_ARCHIVED'
   | 'ENTITY_STATUS_PAUSED';
 
 /**
@@ -102,7 +105,7 @@ export class DV360 extends ApiClient {
   listPartners(options?: ListPartnersOptions) {
     let partners: Dv360Partner[] = [];
     let nextPageToken: string | undefined;
-    
+
     do {
       const response = this.listPartnersPage(nextPageToken, options);
       partners = partners.concat(response.partners);
@@ -130,7 +133,7 @@ export class DV360 extends ApiClient {
         pageToken,
         pageSize,
         filter,
-        orderBy
+        orderBy,
       })
     );
   }
@@ -169,7 +172,7 @@ export class DV360 extends ApiClient {
         pageToken,
         pageSize,
         filter,
-        orderBy
+        orderBy,
       })
     );
   }
@@ -202,7 +205,7 @@ export class DV360 extends ApiClient {
     const downloadOperation = this.fetchEntity(
       this.getUrl('sdfdownloadtasks'),
       {
-        method: 'post'
+        method: 'post',
       },
       {
         version: 'SDF_VERSION_UNSPECIFIED',
@@ -213,11 +216,11 @@ export class DV360 extends ApiClient {
             'FILE_TYPE_INSERTION_ORDER',
             'FILE_TYPE_LINE_ITEM',
             'FILE_TYPE_AD_GROUP',
-            'FILE_TYPE_AD'
+            'FILE_TYPE_AD',
           ],
           filterType: 'FILTER_TYPE_NONE',
-          filterIds: []
-        }
+          filterIds: [],
+        },
       }
     );
     return downloadOperation;
@@ -237,7 +240,7 @@ export class DV360 extends ApiClient {
         return downloadOperation.response.resourceName;
       }
 
-      const delay = initialDelay * (tryCount++);
+      const delay = initialDelay * tryCount++;
       Logger.log(`Backing off for ${delay}ms`);
       Utilities.sleep(delay);
     }
@@ -257,9 +260,9 @@ export class DV360 extends ApiClient {
   }
 
   unzipSdfs(downloadMedia: GoogleAppsScript.Base.Blob): Array<CsvFile> {
-    var unZippedfiles = Utilities.unzip(downloadMedia);
-    const csvValues = Array<CsvFile>();
-    unZippedfiles.forEach((blob) => {
+    const unZippedfiles = Utilities.unzip(downloadMedia);
+    const csvValues = [];
+    unZippedfiles.forEach(blob => {
       const fileName = blob.getName();
       const values = Utilities.parseCsv(blob.getDataAsString());
       Logger.log(`Found ${values.length} entities in file ${fileName}`);
@@ -280,17 +283,20 @@ export class DV360 extends ApiClient {
 
   /**
    * Changes the campaign status
-   * 
-   * @param advertiserId DV360 Advertiser ID 
+   *
+   * @param advertiserId DV360 Advertiser ID
    * @param campaignId DV360 Campaign ID
    * @param newStatus End campaign status
    */
-  changeCampaignStatus(advertiserId: string, campaignId: string, newStatus: DV360CampaignStatus) {
+  changeCampaignStatus(
+    advertiserId: string,
+    campaignId: string,
+    newStatus: DV360CampaignStatus
+  ) {
     return this.fetchEntity(
-      this.getUrl(
-        `advertisers/${advertiserId}/campaigns/${campaignId}`,
-        {updateMask: 'entityStatus'}
-      ),
+      this.getUrl(`advertisers/${advertiserId}/campaigns/${campaignId}`, {
+        updateMask: 'entityStatus',
+      }),
       { method: 'patch' },
       { entityStatus: newStatus }
     );
@@ -298,11 +304,15 @@ export class DV360 extends ApiClient {
 
   /**
    * Changes the campaign status to Active
-   * 
-   * @param advertiserId DV360 Advertiser ID 
+   *
+   * @param advertiserId DV360 Advertiser ID
    * @param campaignId DV360 Campaign ID
    */
   unarchiveCampaign(advertiserId: string, campaignId: string) {
-    return this.changeCampaignStatus(advertiserId, campaignId, 'ENTITY_STATUS_ACTIVE');
+    return this.changeCampaignStatus(
+      advertiserId,
+      campaignId,
+      'ENTITY_STATUS_ACTIVE'
+    );
   }
 }
