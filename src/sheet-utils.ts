@@ -28,10 +28,12 @@ export const SheetUtils = {
    */
   getOrCreateSheet(name: string, hidden: boolean = false) {
     const spreadsheet = SpreadsheetApp.getActive();
+    console.log("Creating: " + name);
     let sheet = spreadsheet.getSheetByName(name);
     if (!sheet) {
       sheet = spreadsheet.insertSheet(name);
     }
+    sheet.activate();
     if (hidden) {
       sheet.hideSheet();
     }

@@ -34,17 +34,20 @@ function updateCache() {
 
 function loadPartners() {
   if (SHEET_CACHE.Partners.isEmpty()) {
-    const partners = dv360
-      .listPartners({ limit: 200 }) // TODO: remove limit?
-      .map(partner => [
+    let partners;
+    const partnerResponse = dv360.listPartners({ limit: 200 });
+    if (partnerResponse[0] == undefined) {
+      partners = [['No Partners Retrieved (*)']];
+    } else {
+      partnerResponse.map(partner => [
         `${partner.displayName} (${partner.partnerId})`,
         partner.partnerId,
         partner.displayName,
       ]);
-
-    SHEET_CACHE.Partners.set(partners);
+    }
+      console.log(partners.toString());
+      SHEET_CACHE.Partners.set(partners);
   }
-
   return SHEET_CACHE.Partners;
 }
 
@@ -72,7 +75,7 @@ function loadCampaigns(advertiserId: string) {
   let campaigns = SHEET_CACHE.Campaigns.lookup(advertiserId, 1);
   if (!campaigns.length) {
     const dv360campaigns = dv360.listCampaigns(advertiserId, {
-      limit: 100, // TODO: remove limit?
+      limit: 200, // TODO: remove limit?
       // List all campaigns
       filter: DV360Utils.generateFilterString(
         'entityStatus',
@@ -169,11 +172,15 @@ function onOpen(e: Event) {
 }
 
 function clearCache() {
+  console.log("Clearing cache...");
   CacheUtils.clearCache(SHEET_CACHE);
-  updateCache();
+  console.log("Done! Creating Campaign sheet");
   const sheet = SheetUtils.getOrCreateSheet(Config.WorkingSheet.Campaigns);
+  console.log("Done! Clearning dropdowns");
   SheetUtils.clearRangeDropdown(sheet.getRange('A2:C'));
-  loadPartners();
+  console.log("Done! Loading Partners");
+  setup();
+  console.log("Done! Partners Loaded");
 }
 
 function showHelpPage() {

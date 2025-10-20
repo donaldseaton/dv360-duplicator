@@ -40,7 +40,7 @@ export const CacheUtils = {
    */
   clearCache(entities: { [key: string]: SheetCache }) {
     Object.keys(entities).forEach(key => {
-      entities[key].clear();
+      entities[key].reset()
     });
   },
 };

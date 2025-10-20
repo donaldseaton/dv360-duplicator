@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { SheetUtils } from './sheet-utils';
+
 /**
  * What can be stored in the cache cells
  */
@@ -121,8 +124,16 @@ export class SheetCache {
    * Erase the cache
    */
   clear() {
+    this.cacheSheet.clear();
+  }
+
+  reset(){
+    let name = this.cacheSheet.getName();
+    console.log("Resetting: " + name);
     const ss = SpreadsheetApp.getActive();
     ss.deleteSheet(this.cacheSheet);
+    this.cacheSheet = SheetUtils.getOrCreateSheet(name, true);
+    console.log(this.cacheSheet.getSheetId());
   }
 
   /**
