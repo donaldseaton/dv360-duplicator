@@ -27,13 +27,13 @@ export const SheetUtils = {
    * @param name Sheet's name
    */
   getOrCreateSheet(name: string, hidden: boolean = false) {
+    console.log("Re-creating sheet: " + name);
     const spreadsheet = SpreadsheetApp.getActive();
-    console.log("Creating: " + name);
     let sheet = spreadsheet.getSheetByName(name);
     if (!sheet) {
       sheet = spreadsheet.insertSheet(name);
     }
-    sheet.activate();
+    // sheet.activate();
     if (hidden) {
       sheet.hideSheet();
     }

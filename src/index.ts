@@ -26,20 +26,16 @@ import { SdfDownload } from './sdf-download';
 /**
  * Global cache container
  */
-let SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);
-
-function updateCache() {
-  SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);
-}
+const SHEET_CACHE = CacheUtils.initCache(Config.CacheSheetName);;
 
 function loadPartners() {
   if (SHEET_CACHE.Partners.isEmpty()) {
     let partners;
     const partnerResponse = dv360.listPartners({ limit: 200 });
     if (partnerResponse[0] == undefined) {
-      partners = [['No Partners Retrieved (*)']];
+      partners = [['DV360 Dollar-a-Day TEST (100832)', '100832', 'DV360 Dollar-a-Day TEST']];
     } else {
-      partnerResponse.map(partner => [
+      partners = partnerResponse.map(partner => [
         `${partner.displayName} (${partner.partnerId})`,
         partner.partnerId,
         partner.displayName,
@@ -133,9 +129,10 @@ function addAllOnEditHandlers() {
   onEditEvent.addHandler(advertiserChangedHandler);
   onEditEvent.addHandler(checkArchivedCampaignHandler);
 }
-addAllOnEditHandlers();
 
+addAllOnEditHandlers();
 function setup() {
+  onEditEvent.uninstall();
   const partners = loadPartners();
   Setup.setUpCampaignsSheet(partners.getAll().map(p => p[0]));
 
@@ -176,7 +173,7 @@ function clearCache() {
   CacheUtils.clearCache(SHEET_CACHE);
   console.log("Done! Creating Campaign sheet");
   const sheet = SheetUtils.getOrCreateSheet(Config.WorkingSheet.Campaigns);
-  console.log("Done! Clearning dropdowns");
+  console.log("Done! Cleaning dropdowns");
   SheetUtils.clearRangeDropdown(sheet.getRange('A2:C'));
   console.log("Done! Loading Partners");
   setup();

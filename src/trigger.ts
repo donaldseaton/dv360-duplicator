@@ -37,12 +37,18 @@ export interface OnEditHandler {
 
 const onEditHandlers: OnEditHandler[] = [];
 
+ function testonEditEvent(){
+  let range = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Campaigns").getRange("A2");
+  onEditEvent({range});
+ }
+
 /**
  * The wrapper function which is called on every edit and determines which
  * handlers should be executed.
  * @param event an edit event
  */
 export function onEditEvent(event: SheetsOnEditEventSimplified) {
+  console.log("OnEdit Fired: " + event.range.getA1Notation() + " from: " + event.range.getSheet().getName()+"/" + event.range.getSheet().getSheetId());
   onEditHandlers.forEach(
     handler => handler.shouldRun(event) && handler.run(event)
   );

@@ -45,6 +45,7 @@ export const TriggerUtils = {
   ): OnEditHandler {
     return {
       shouldRun({ range }) {
+        console.log(range.getA1Notation());
         const isOnlyOneColumnUpdated = !(
           range.getLastColumn() - range.getColumn()
         );
@@ -53,6 +54,15 @@ export const TriggerUtils = {
           range.getColumn() === columnNumber;
         const isNewValueNonEmpty = !!range.getValue();
 
+        console.log("Should run handler for " + sheetName + "? ");
+        console.log(isOnlyOneColumnUpdated);
+        console.log(isThisTheColumnWeWaitFor);
+        console.log(isNewValueNonEmpty);
+        console.log(range.getSheet().getName());
+        console.log(range.getColumn());
+        console.log(columnNumber);
+
+
         return (
           isOnlyOneColumnUpdated &&
           isThisTheColumnWeWaitFor &&
@@ -60,6 +70,7 @@ export const TriggerUtils = {
         );
       },
       run({ range }) {
+        console.log("Handler for " + sheetName + " triggered");
         console.log(
           `Running changed handler. Source range: [${range.getColumn()}, ${range.getRow()}]`
         );
@@ -93,6 +104,7 @@ export const TriggerUtils = {
 
         let defaultDropdownValue = '';
         const parentValues = cache.find(parentName, 0);
+        console.log('parentValues: ' + parentValues.toString());
         if (parentValues) {
           const parentId = '' + parentValues[parentIdIndex];
           console.log('parentId', parentId);
