@@ -52,8 +52,12 @@ export const SheetUtils = {
       throw Error(`Sheet with name '${name}' not found`);
     }
 
+    // Get the last row where a New Campaign Name has been specified.
+    let lastrow = sheet.getRange("D1:D").getValues().filter(String).length;
+    console.log("Final Row :" + lastrow);
+
     return sheet
-      .getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn())
+      .getRange(1, 1, lastrow, sheet.getLastColumn())
       .getDisplayValues();
   },
 
