@@ -166,18 +166,48 @@ export class SdfGenerator {
       this.sdf.Campaigns = [];
     }
 
+    type campaignType = {
+      campaign_name: string,
+      new_id: string,
+      advertiser_id: string,
+      campaign: StringKeyObject,
+      changes: StringKeyObject[],
+    };
+    let campaignMapping: campaignType[] = [];
+    let alreadyGeneratedCampaigns: string[] = [];
+
     for (let i = 0; i < templateEntities.length; i++) {
-      const generatedCampaign = this.generateSDFRow(
+      let generatedCampaign = this.generateSDFRow(
         templateEntities[i],
         changes[i],
         entityName
       );
-      this.sdf.Campaigns.push(generatedCampaign);
 
-      const advertiserId = templateEntities[i]['Advertiser Id'];
+
+      // Don't add campaigns with the same name into the map (deduplicate!).
+      if (!alreadyGeneratedCampaigns.includes(generatedCampaign['Name'])) {
+        campaignMapping.push(<campaignType>({campaign_name: generatedCampaign['Name'], new_id: generatedCampaign['Campaign Id'], advertiser_id: templateEntities[i]['Advertiser Id'], campaign: generatedCampaign, changes}));
+        alreadyGeneratedCampaigns.push(generatedCampaign['Name']);
+        this.sdf.Campaigns.push(generatedCampaign);
+      }
+      else {
+        for (let j = 0; j < campaignMapping.length; j++) {
+          if (campaignMapping[j].campaign_name == generatedCampaign['Name']) {
+            generatedCampaign['Campaign Id'] = campaignMapping[j].new_id;
+            campaignMapping[j].changes.concat(changes[i]);
+          }
+        }
+      }
+    };
+
+    for(let i = 0; i < campaignMapping.length; i++){
+      let advertiserId = campaignMapping[i].advertiser_id;
+      let changes = campaignMapping[i].changes;
+      let generatedCampaign = campaignMapping[i].campaign;
+
       this.generateSDFForAllChildEntities(
         advertiserId,
-        changes[i],
+        changes,
         generatedCampaign
       );
     }
@@ -195,61 +225,71 @@ export class SdfGenerator {
    */
   generateSDFForAllChildEntities(
     advertiserId: string,
-    changes: StringKeyObject,
+    changes: StringKeyObject[],
     campaign: StringKeyObject
   ) {
-    // insertionOrders
-    const insertionOrders = this.generateSDFForDirectChildren(
-      'InsertionOrders',
-      advertiserId,
-      changes,
-      [campaign]
-    );
+    let alreadyProcessedIOs: string[] = [];
+    let alreadyProcessedLIs: string[] = [];
+    let alreadyProcessedAdGroups: string[] = [];
+    let alreadyProcessedAdGroupAds: string[] = [];
+    for (let i = 0; i < changes.length; i++){
+      // insertionOrders
+      const insertionOrders = this.generateSDFForDirectChildren(
+        'InsertionOrders',
+        advertiserId,
+        changes[i],
+        [campaign],
+        alreadyProcessedIOs,
+      );
 
-    if (!this.sdf.InsertionOrders) {
-      this.sdf.InsertionOrders = [];
+      if (!this.sdf.InsertionOrders) {
+        this.sdf.InsertionOrders = [];
+      }
+      this.sdf.InsertionOrders.push(...insertionOrders);
+
+      //  lineItems
+      const lineItems = this.generateSDFForDirectChildren(
+        'LineItems',
+        advertiserId,
+        changes[i],
+        insertionOrders,
+        alreadyProcessedLIs,
+      );
+
+      if (!this.sdf.LineItems) {
+        this.sdf.LineItems = [];
+      }
+      this.sdf.LineItems.push(...lineItems);
+
+      //  AdGroups
+      const adGroups = this.generateSDFForDirectChildren(
+        'AdGroups',
+        advertiserId,
+        changes[i],
+        lineItems,
+        alreadyProcessedAdGroups,
+      );
+
+      if (!this.sdf.AdGroups) {
+        this.sdf.AdGroups = [];
+      }
+      this.sdf.AdGroups.push(...adGroups);
+
+      //  Ads
+      const adGroupAds = this.generateSDFForDirectChildren(
+        'AdGroupAds',
+        advertiserId,
+        changes[i],
+        adGroups,
+        alreadyProcessedAdGroupAds,
+      );
+
+      if (!this.sdf.AdGroupAds) {
+        this.sdf.AdGroupAds = [];
+      }
+      this.sdf.AdGroupAds.push(...adGroupAds);
+
     }
-    this.sdf.InsertionOrders.push(...insertionOrders);
-
-    //  lineItems
-    const lineItems = this.generateSDFForDirectChildren(
-      'LineItems',
-      advertiserId,
-      changes,
-      insertionOrders
-    );
-
-    if (!this.sdf.LineItems) {
-      this.sdf.LineItems = [];
-    }
-    this.sdf.LineItems.push(...lineItems);
-
-    //  AdGroups
-    const adGroups = this.generateSDFForDirectChildren(
-      'AdGroups',
-      advertiserId,
-      changes,
-      lineItems
-    );
-
-    if (!this.sdf.AdGroups) {
-      this.sdf.AdGroups = [];
-    }
-    this.sdf.AdGroups.push(...adGroups);
-
-    //  Ads
-    const adGroupAds = this.generateSDFForDirectChildren(
-      'AdGroupAds',
-      advertiserId,
-      changes,
-      adGroups
-    );
-
-    if (!this.sdf.AdGroupAds) {
-      this.sdf.AdGroupAds = [];
-    }
-    this.sdf.AdGroupAds.push(...adGroupAds);
-
     return this;
   }
 
@@ -266,47 +306,56 @@ export class SdfGenerator {
     entityName: SdfEntityName,
     advertiserId: string,
     changes: StringKeyObject,
-    parentEntities: StringKeyObject[]
+    parentEntities: StringKeyObject[],
+    alreadyProcessed: string[],
   ) {
     console.log('generateSDFForDirectChildren: Generating SDF for', entityName);
 
     const result: StringKeyObject[] = [];
 
-    parentEntities.forEach(parent => {
-      const parentIdKey = entityHierarchy[entityName]['parentId'];
-      const parentIdValue = parent[parentIdKey];
-      const parentIdCachedValue = ExtNameGenerator.getCached(
-        entityHierarchy[entityName]['parent'] as SdfEntityName,
-        parentIdValue
-      );
-      console.log(
-        'generateSDFForDirectChildren',
-        parentIdKey,
-        parentIdValue,
-        parentIdCachedValue
-      );
+    const key = entityName + ':Name';
+    const name = changes[key]
+    if (alreadyProcessed.indexOf(name) === -1){
 
-      // Fetching all children
-      const currentSDF = this.sdfGetFromSheetOrDownload(
-        entityName,
-        advertiserId,
-        false,
-        { [parentIdKey]: parentIdCachedValue }
-      );
+      parentEntities.forEach(parent => {
+        const parentIdKey = entityHierarchy[entityName]['parentId'];
+        const parentIdValue = parent[parentIdKey];
+        const parentIdCachedValue = ExtNameGenerator.getCached(
+          entityHierarchy[entityName]['parent'] as SdfEntityName,
+          parentIdValue
+        );
+        console.log(
+          'generateSDFForDirectChildren',
+          parentIdKey,
+          parentIdValue,
+          parentIdCachedValue
+        );
 
-      // Adding correct extId from the parent
-      const extKey =
-        entityName +
-        Config.SDFGeneration.EntityNameDelimiter +
-        entityHierarchy[entityName]['parentId'];
+        // Fetching all children
+        const currentSDF = this.sdfGetFromSheetOrDownload(
+          entityName,
+          advertiserId,
+          false,
+          { [parentIdKey]: parentIdCachedValue }
+        );
 
-      currentSDF.forEach((entity: StringKeyObject) => {
-        changes[extKey] = parentIdValue;
-        result.push(this.generateSDFRow(entity, changes, entityName));
+        // Adding correct extId from the parent
+        const extKey =
+          entityName +
+          Config.SDFGeneration.EntityNameDelimiter +
+          entityHierarchy[entityName]['parentId'];
+
+        currentSDF.forEach((entity: StringKeyObject) => {
+          changes[extKey] = parentIdValue;
+          result.push(this.generateSDFRow(entity, changes, entityName));
+        });
       });
-    });
-
-    return result;
+      alreadyProcessed.push(name);
+      return result;
+    }
+    else {
+      return [];
+    }
   }
 
   /**

@@ -152,11 +152,13 @@ export const SdfUtils = {
       for (const entityType in entities) {
         const sheet = newSpreadsheet.insertSheet();
         const data = SdfUtils.JSONtoArray(entities[entityType]);
-        console.log('saveToSpreadsheet data:', data);
+        // const dedupeddata = SdfUtils.deDuplicateEntities(data);
+        const dedupeddata = data;
+        console.log('saveToSpreadsheet data:', dedupeddata);
 
         sheet.setName(entityType);
-        if (data && data[0]) {
-          sheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+        if (dedupeddata && dedupeddata[0]) {
+          sheet.getRange(1, 1, dedupeddata.length, dedupeddata[0].length).setValues(dedupeddata);
         }
       }
 
@@ -175,6 +177,40 @@ export const SdfUtils = {
       throw e;
     }
   },
+
+  // deDuplicateEntities(rows: string[][]){
+  //   type campaignType = {
+  //     campaign_name: string,
+  //     new_id: string,
+  //   };
+  //   type oldNewMappingType = {
+  //     old_id: string,
+  //     new_id: string,
+  //   };
+  //   const sourceColumns = ['Campaign Id', 'Io Id', 'Line Item Id', 'Ad Group Id'];
+  //   let campaignMapping: campaignType[] = [];
+  //   let oldNewMapping: oldNewMappingType[] = [];
+  //   const campaignColumn = rows[0].indexOf('Campaign Id');
+  //   const campaignName = rows[0].indexOf('Name');
+
+  //   for (let j = 1; j < rows.length; j++){ //skipping the header row.
+  //     let columns = rows[j];
+  //     let id = columns[campaignColumn];
+  //     let name = columns[campaignName];
+      
+  //     for (let i = 0; i < campaignMapping.length; i++) {
+  //       if (campaignMapping[i].campaign_name == name) {
+  //       columns[campaignColumn] = campaignMapping[i].new_id;
+  //       oldNewMapping.push({old_id: id, new_id: oldNewMapping[i].new_id});
+  //       }
+  //     }
+  //     if (oldNewMapping.length === 0){
+  //       oldNewMapping.push(<oldNewMappingType>({old_id: id, new_id: id}));
+  //       campaignMapping.push(<campaignType>({campaign_name: name, new_id: id}));
+  //     }
+  //   };
+  //  return rows;
+  // },
 
   /**
    * Converts an array of JSONs to the table array (and returns it) with the
